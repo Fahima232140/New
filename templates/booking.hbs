@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Booking</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: url('/images/img1.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 900px;
+            padding: 40px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 10px 30px rgba(255, 102, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        .title {
+            font-size: 3.8rem;
+            margin-bottom: 1.5rem;
+            color: #ffcc00;
+            text-shadow: 0 4px 10px rgba(255, 102, 0, 0.5);
+        }
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: #e0e0e0;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #ff6600;
+            color: #fff;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #ffcc00;
+        }
+        .message {
+            color: green;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="title">Book Your Flight</h2>
+        <p class="subtitle">Enter your flight details below</p>
+        <input type="text" id="name" placeholder="Full Name">
+        <input type="email" id="email" placeholder="Email">
+        <input type="text" id="passport" placeholder="Passport Number">
+        <input type="text" id="departure" placeholder="Departure City">
+        <input type="text" id="destination" placeholder="Destination City">
+        <input type="date" id="date">
+        <button onclick="handleBooking()">Book Flight</button>
+        <p id="message" class="message"></p>
+    </div>
+    
+    <script>
+    async function handleBooking() {
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const passport = document.getElementById("passport").value;
+        const departure = document.getElementById("departure").value;
+        const destination = document.getElementById("destination").value;
+        const date = document.getElementById("date").value;
+        const message = document.getElementById("message");
+
+        if (!name || !email || !passport || !departure || !destination || !date) {
+            message.textContent = "Please fill in all fields.";
+            message.style.color = "red";
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/booking/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, passport, departure, destination, date })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                message.textContent = "Flight booking successful!";
+                message.style.color = "green";
+            } else {
+                message.textContent = data.error || "Booking failed.";
+                message.style.color = "red";
+            }
+        } catch (error) {
+            console.error(error);
+            message.textContent = "An error occurred. Try again.";
+            message.style.color = "red";
+        }
+    }
+
+async function checkSession() {
+    try {
+        const response = await fetch("/api/auth/check-session", { method: "GET", credentials: "include" });
+        const data = await response.json();
+
+        if (!data.valid) {
+            alert("⚠️ Session expired or logged in from another device. Please log in again!");
+            window.location.href = "/login"; // Redirect to login page
+        }
+    } catch (error) {
+        console.error("Error checking session:", error);
+    }
+}
+
+// Run session check when page loads
+checkSession();
+
+</script>
+
+</body>
+</html>

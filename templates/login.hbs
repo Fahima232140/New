@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Transportation Booking System</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: url('/images/img1.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 900px;
+            padding: 40px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 10px 30px rgba(255, 102, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        .title {
+            font-size: 3.8rem;
+            margin-bottom: 1.5rem;
+            color: #ffcc00;
+            text-shadow: 0 4px 10px rgba(255, 102, 0, 0.5);
+        }
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: #e0e0e0;
+        }
+        .login-form {
+            margin-top: 2rem;
+            text-align: left;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .login-form input, .login-form select, .login-form button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .login-form button {
+            background-color: #ff6600;
+            color: #fff;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+        }
+        .login-form button:hover {
+            background-color: #ffcc00;
+        }
+        .navigation {
+            margin: 20px 0;
+            font-size: 1rem;
+        }
+        .navigation a {
+            margin: 0 15px;
+            color: #ffcc00;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+        .navigation a:hover {
+            color: #ff6a00;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 20px;
+        }
+        .signup-link {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #ffcc00;
+        }
+        .signup-link a {
+            color: #ffcc00;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .signup-link a:hover {
+            color: #ff6a00;
+        }
+        #admin-id-field {
+            display: none;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Explore Your Journey</h1>
+        <p class="subtitle">Welcome to our Transportation Booking System! Please log in to proceed.</p>
+
+        <div class="login-form">
+            <h2>Login</h2>
+            {{#if errorMessage}}
+                <p class="error-message">{{errorMessage}}</p>
+            {{/if}}
+            <form id="login-form">
+                <input type="email" name="email" id="email" placeholder="Enter your email" required>
+                <input type="password" name="password" id="password" placeholder="Enter your password" required>
+                <select id="user-type" name="type" onchange="toggleAdminField()" required>
+                    <option value="">Select Type</option>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <div id="admin-id-field">
+                    <input type="text" name="admin_id" id="admin-id" placeholder="Enter Admin ID">
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+
+        <div class="signup-link">
+            <p>Don't have an account? <a href="/signup">Sign Up Here</a></p>
+        </div>
+
+        <div class="navigation">
+            <a href="/home">Home</a>
+            <a href="/about">About Us</a>
+            <a href="/contact">Contact</a>
+        </div>
+        <footer class="footer">&copy; 2024 Transportation Booking System. All Rights Reserved.</footer>
+    </div>
+
+<script>
+    document.getElementById("login-form").addEventListener("submit", async function(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        try {
+            const response = await fetch("/api/auth/login", {
+                method: "POST",
+                body: JSON.stringify({ email, password }),
+                headers: { "Content-Type": "application/json" },
+                credentials: "include"  // ✅ Ensures cookies (refreshToken) are sent properly
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // ✅ Store accessToken in localStorage
+                localStorage.setItem("accessToken", data.accessToken);
+
+                // ✅ Redirect user (fallback to dashboard if no URL is provided)
+                window.location.href = data.redirectUrl || "/searchFlights";
+            } else {
+                alert(data.error || "⚠️ Login failed! Please try again.");
+            }
+        } catch (error) {
+            console.error("❌ Login Error:", error);
+            alert("⚠️ Something went wrong. Please try again.");
+        }
+    });
+
+    function logout() {
+        fetch("/api/auth/logout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include"  // ✅ Ensures cookies are cleared properly
+        }).then(() => {
+            localStorage.clear();  // Remove stored accessToken
+            window.location.href = "/login";
+        });
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+        options.headers = {
+            ...options.headers,
+            "Authorization": `Bearer ${localStorage.getItem("accessToken")}`, // ✅ Attach accessToken
+            "Content-Type": "application/json"
+        };
+        options.credentials = "include";  // ✅ Ensures cookies (JWT) are included
+
+        let response = await fetch(url, options);
+
+        if (response.status === 401) {
+            console.warn("🔄 Token expired, trying refresh...");
+            const refreshResponse = await fetch("/api/auth/refresh-token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include"
+            });
+
+            if (refreshResponse.ok) {
+                const newData = await refreshResponse.json();
+                localStorage.setItem("accessToken", newData.accessToken);  // ✅ Store new token
+                options.headers["Authorization"] = `Bearer ${newData.accessToken}`;
+                return fetch(url, options);  // Retry the request with new token
+            } else {
+                console.error("❌ Refresh failed, logging out...");
+                localStorage.clear();
+                window.location.href = "/login";  // Force login if refresh fails
+            }
+        }
+        return response;
+    }
+</script>
+
+
+</body>
+</html>
