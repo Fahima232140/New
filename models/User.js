@@ -1,31 +1,25 @@
-const mongoose = require('../mongo');
+const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
-
-const UserSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    userType: { type: String, enum: ['user', 'admin'], required: true },
-    adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+const userSchema = new mongoose.Schema({
+    name: String,
+    email: String,
+    password: String,
+    isVerified: { type: Boolean, default: false },
+    verificationToken: { type: String, default: null }
 });
 
-// Hash password before saving
-UserSchema.pre('save', async function (next) {
+// ✅ Hash password before saving user
+userSchema.pre('save', async function (next) {  // ⬅️ FIXED (was UserSchema.pre)
     if (!this.isModified('password')) return next();
     this.password = await bcrypt.hash(this.password, 10);
     next();
 });
 
-
-// Method to compare input password with hashed password
-UserSchema.methods.comparePassword = async function(password) {
-    return await bcrypt.compare(password, this.password);
+// ✅ Compare password method
+userSchema.methods.comparePassword = async function (candidatePassword) {  // ⬅️ FIXED (was UserSchema.methods)
+    return await bcrypt.compare(candidatePassword, this.password);
 };
 
-
-module.exports = mongoose.model('User', UserSchema);
-
-
-
-
+const User = mongoose.model('User', userSchema); // ⬅️ FIXED (was UserSchema)
+module.exports = User;

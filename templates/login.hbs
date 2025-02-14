@@ -42,7 +42,7 @@
             max-width: 400px;
             margin: 0 auto;
         }
-        .login-form input, .login-form select, .login-form button {
+        .login-form input, .login-form button {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -92,9 +92,6 @@
         .signup-link a:hover {
             color: #ff6a00;
         }
-        #admin-id-field {
-            display: none;
-        }
         .error-message {
             color: red;
             text-align: center;
@@ -109,20 +106,10 @@
 
         <div class="login-form">
             <h2>Login</h2>
-            {{#if errorMessage}}
-                <p class="error-message">{{errorMessage}}</p>
-            {{/if}}
+            <p class="error-message" id="error-message"></p>
             <form id="login-form">
                 <input type="email" name="email" id="email" placeholder="Enter your email" required>
                 <input type="password" name="password" id="password" placeholder="Enter your password" required>
-                <select id="user-type" name="type" onchange="toggleAdminField()" required>
-                    <option value="">Select Type</option>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                </select>
-                <div id="admin-id-field">
-                    <input type="text" name="admin_id" id="admin-id" placeholder="Enter Admin ID">
-                </div>
                 <button type="submit">Login</button>
             </form>
         </div>
@@ -141,46 +128,39 @@
 
 <script>
     document.getElementById("login-form").addEventListener("submit", async function(event) {
-        event.preventDefault(); // Prevent default form submission
+        event.preventDefault();
+        
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const errorMessage = document.getElementById("error-message");
 
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
+        errorMessage.textContent = "";
+        
+        if (!email || !password) {
+            errorMessage.textContent = "⚠️ Please fill in all fields.";
+            return;
+        }
 
         try {
             const response = await fetch("/api/auth/login", {
                 method: "POST",
                 body: JSON.stringify({ email, password }),
                 headers: { "Content-Type": "application/json" },
-                credentials: "include"  // ✅ Ensures cookies (refreshToken) are sent properly
+                credentials: "include"
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                // ✅ Store accessToken in localStorage
                 localStorage.setItem("accessToken", data.accessToken);
-
-                // ✅ Redirect user (fallback to dashboard if no URL is provided)
-                window.location.href = data.redirectUrl || "/searchFlights";
+                window.location.href = data.redirectUrl || "/booking";
             } else {
-                alert(data.error || "⚠️ Login failed! Please try again.");
+                errorMessage.textContent = data.error || "⚠️ Login failed! Please try again.";
             }
         } catch (error) {
-            console.error("❌ Login Error:", error);
-            alert("⚠️ Something went wrong. Please try again.");
+            errorMessage.textContent = "⚠️ Something went wrong. Please try again.";
         }
     });
-
-    function logout() {
-        fetch("/api/auth/logout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include"  // ✅ Ensures cookies are cleared properly
-        }).then(() => {
-            localStorage.clear();  // Remove stored accessToken
-            window.location.href = "/login";
-        });
-    }
 
     async function fetchWithAuth(url, options = {}) {
         options.headers = {
@@ -214,7 +194,5 @@
         return response;
     }
 </script>
-
-
 </body>
 </html>

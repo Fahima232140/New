@@ -63,17 +63,43 @@
     <div class="container">
         <h2 class="title">Book Your Flight</h2>
         <p class="subtitle">Enter your flight details below</p>
-        <input type="text" id="name" placeholder="Full Name">
-        <input type="email" id="email" placeholder="Email">
-        <input type="text" id="passport" placeholder="Passport Number">
-        <input type="text" id="departure" placeholder="Departure City">
-        <input type="text" id="destination" placeholder="Destination City">
-        <input type="date" id="date">
+        
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="text" id="passport" placeholder="Passport Number" required pattern="[0-9]+" title="Passport number must be numbers only">
+        <input type="text" id="departure" placeholder="Departure City" required>
+        <input type="text" id="destination" placeholder="Destination City" required>
+        <input type="date" id="date" required>
+
         <button onclick="handleBooking()">Book Flight</button>
         <p id="message" class="message"></p>
+
+        <button onclick="redirectToPayment()">Proceed to Payment</button>
     </div>
     
     <script>
+    function validateInputs() {
+        const email = document.getElementById("email").value;
+        const passport = document.getElementById("passport").value;
+        const message = document.getElementById("message");
+
+        // Email validation
+        if (!email.includes("@") || !email.includes(".")) {
+            message.textContent = "Invalid email format.";
+            message.style.color = "red";
+            return false;
+        }
+
+        // Passport number validation (only numbers)
+        if (!/^\d+$/.test(passport)) {
+            message.textContent = "Passport number must contain only numbers.";
+            message.style.color = "red";
+            return false;
+        }
+
+        return true;
+    }
+
     async function handleBooking() {
         const name = document.getElementById("name").value;
         const email = document.getElementById("email").value;
@@ -88,6 +114,8 @@
             message.style.color = "red";
             return;
         }
+
+        if (!validateInputs()) return;
 
         try {
             const response = await fetch('/api/booking/create', {
@@ -112,24 +140,27 @@
         }
     }
 
-async function checkSession() {
-    try {
-        const response = await fetch("/api/auth/check-session", { method: "GET", credentials: "include" });
-        const data = await response.json();
-
-        if (!data.valid) {
-            alert("⚠️ Session expired or logged in from another device. Please log in again!");
-            window.location.href = "/login"; // Redirect to login page
-        }
-    } catch (error) {
-        console.error("Error checking session:", error);
+    function redirectToPayment() {
+        window.location.href = "/payment"; // Redirect to payment page
     }
-}
 
-// Run session check when page loads
-checkSession();
+    async function checkSession() {
+        try {
+            const response = await fetch("/api/auth/check-session", { method: "GET", credentials: "include" });
+            const data = await response.json();
 
-</script>
+            if (!data.valid) {
+                alert("⚠️ Session expired or logged in from another device. Please log in again!");
+                window.location.href = "/login"; // Redirect to login page
+            }
+        } catch (error) {
+            console.error("Error checking session:", error);
+        }
+    }
+
+    // Run session check when page loads
+    checkSession();
+    </script>
 
 </body>
 </html>

@@ -13,6 +13,10 @@ const authenticateJWT = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         console.log(`🔎 Verifying token for user: ${decoded.userId}`);
 
+        if (!user.isVerified) {
+            return res.status(403).json({ message: "⚠️ Please verify your email to proceed." });
+        }
+
         // ✅ Ensure we fetch the latest session (sorted by newest createdAt)
         const latestSession = await Session.findOne({ userId: decoded.userId }).sort({ createdAt: -1 });
 

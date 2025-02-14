@@ -42,7 +42,7 @@
             max-width: 400px;
             margin: 0 auto;
         }
-        .signup-form input, .signup-form select, .signup-form button {
+        .signup-form input, .signup-form button {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -58,6 +58,11 @@
         }
         .signup-form button:hover {
             background-color: #ffcc00;
+        }
+        .password-strength {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            color: red;
         }
         .navigation {
             margin: 20px 0;
@@ -92,9 +97,6 @@
         .login-link a:hover {
             color: #ff6a00;
         }
-        #admin-id-field {
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -103,62 +105,89 @@
         <p class="subtitle">Please provide the necessary information to create an account.</p>
 
         <div class="signup-form">
-            <form id="signup-form" action="/api/auth/signup" method="POST">
+            <form id="signup-form">
                 <input type="text" name="name" id="name" placeholder="Full Name" required>
                 <input type="email" name="email" id="email" placeholder="Email Address" required>
                 <input type="password" name="password" id="password" placeholder="Password" required>
-                <select id="user-type" name="type" onchange="toggleAdminIdField()" required>
-                    <option value="">Select Account Type</option>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                </select>
-                <div id="admin-id-field">
-                    <input type="text" id="admin-id" name="adminId" placeholder="Enter Admin ID">
-                </div>
+                <p class="password-strength" id="password-strength"></p>
                 <button type="submit">Sign Up</button>
             </form>
         </div>
 
         <div class="login-link">
-            <p>Already have an account? <a href="/api/login">Login Here</a></p>
+            <p>Already have an account? <a href="/login">Login Here</a></p>
         </div>
 
         <div class="navigation">
-            <a href="/api/home">Home</a>
+            <a href="/home">Home</a>
             <a href="/about">About Us</a>
             <a href="/contact">Contact</a>
         </div>
         <footer class="footer">&copy; 2024 Transportation Booking System. All Rights Reserved.</footer>
     </div>
 
-    <script>
-        function toggleAdminIdField() {
-            let userType = document.getElementById("user-type").value;
-            let adminField = document.getElementById("admin-id-field");
-            let adminInput = document.getElementById("admin-id");
-            if (userType === "admin") {
-                adminField.style.display = "block";
-                adminInput.setAttribute("required", "true");
-            } else {
-                adminField.style.display = "none";
-                adminInput.removeAttribute("required");
-            }
+<script>
+    document.getElementById("signup-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const password = formData.get("password");
+
+        // ✅ Password Strength Validation
+        if (!isStrongPassword(password)) {
+            alert("⚠️ Password must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols.");
+            return;
         }
 
-        document.querySelector("form").addEventListener("submit", async (event) => {
-            event.preventDefault();
-            
-            const formData = new FormData(event.target);
-            const response = await fetch("/api/signup", {
+        try {
+            const response = await fetch("/api/auth/signup", {
                 method: "POST",
-                body: new URLSearchParams(formData), // Converts to x-www-form-urlencoded
+                body: new URLSearchParams(formData),
                 headers: { "Content-Type": "application/x-www-form-urlencoded" }
-});
+            });
 
+            const result = await response.json(); // Parse response as JSON
 
-            const result = await response.text();
-            alert(result);
-        });
-    </script>
+            if (response.ok) {
+                alert(result.message || "✅ Signup successful! Please check your email to verify your account.");
+                window.location.href = "/api/auth/login"; // Redirect after successful signup
+            } else {
+                alert(result.error || "⚠️ An error occurred. Please try again.");
+            }
+        } catch (error) {
+            alert("⚠️ Network error. Please check your connection.");
+        }
+    });
+
+    // ✅ Password Strength Checker
+    function isStrongPassword(password) {
+        const strongPasswordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+        return strongPasswordRegex.test(password);
+    }
+
+    // ✅ Live Password Strength Indicator
+    document.getElementById("password").addEventListener("input", function () {
+        const password = this.value;
+        const strengthText = document.getElementById("password-strength");
+
+        if (password.length < 8) {
+            strengthText.textContent = "Weak: Password too short";
+            strengthText.style.color = "red";
+        } else if (!/(?=.*[A-Z])/.test(password)) {
+            strengthText.textContent = "Medium: Add an uppercase letter";
+            strengthText.style.color = "orange";
+        } else if (!/(?=.*\d)/.test(password)) {
+            strengthText.textContent = "Medium: Add a number";
+            strengthText.style.color = "orange";
+        } else if (!/(?=.*[\W_])/.test(password)) {
+            strengthText.textContent = "Strong: Add a symbol";
+            strengthText.style.color = "yellow";
+        } else {
+            strengthText.textContent = "Very Strong!";
+            strengthText.style.color = "green";
+        }
+    });
+</script>
+
 </body>
 </html>
